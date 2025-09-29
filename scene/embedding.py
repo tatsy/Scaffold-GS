@@ -33,17 +33,17 @@ class FieldComponent(nn.Module):
             in_dim: input dimension
         """
         if in_dim <= 0:
-            raise ValueError("Input dimension should be greater than zero")
+            raise ValueError('Input dimension should be greater than zero')
         self.in_dim = in_dim
 
     def get_out_dim(self) -> int:
         """Calculates output dimension of encoding."""
         if self.out_dim is None:
-            raise ValueError("Output dimension has not been set")
+            raise ValueError('Output dimension has not been set')
         return self.out_dim
 
     @abstractmethod
-    def forward(self, in_tensor: Shaped[Tensor, "*bs input_dim"]) -> Shaped[Tensor, "*bs output_dim"]:
+    def forward(self, in_tensor: Shaped[Tensor, '*bs input_dim']) -> Shaped[Tensor, '*bs output_dim']:
         """
         Returns processed tensor
 
@@ -51,6 +51,7 @@ class FieldComponent(nn.Module):
             in_tensor: Input tensor to process
         """
         raise NotImplementedError
+
 
 class Embedding(FieldComponent):
     """Index into embeddings.
@@ -74,12 +75,10 @@ class Embedding(FieldComponent):
         """Return the mean of the embedding weights along a dim."""
         return self.embedding.weight.mean(dim)
 
-    def forward(self, in_tensor: Shaped[Tensor, "*batch input_dim"]) -> Shaped[Tensor, "*batch output_dim"]:
+    def forward(self, in_tensor: Shaped[Tensor, '*batch input_dim']) -> Shaped[Tensor, '*batch output_dim']:
         """Call forward
 
         Args:
             in_tensor: input tensor to process
-        """
-        return self.embedding(in_tensor)
         """
         return self.embedding(in_tensor)

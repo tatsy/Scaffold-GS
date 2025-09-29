@@ -9,19 +9,9 @@
 # For inquiries contact  george.drettakis@inria.fr
 #
 
-import os
-import subprocess
-
-import numpy as np
-
-cmd = 'nvidia-smi -q -d Memory |grep -A4 GPU|grep Used'
-result = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE).stdout.decode().split('\n')
-os.environ['CUDA_VISIBLE_DEVICES'] = str(np.argmin([int(x.split()[2]) for x in result[:-1]]))
-
-os.system('echo $CUDA_VISIBLE_DEVICES')
-
-
 import json
+import logging
+import os
 import sys
 import time
 import uuid
@@ -30,33 +20,30 @@ from os import makedirs
 from pathlib import Path
 from random import randint
 
-# from lpipsPyTorch import lpips
-import lpips
+import coloredlogs
 import torch
 import torchvision
 import torchvision.transforms.functional as tf
 import wandb
+import yaml
 from PIL import Image
 from tqdm import tqdm
 
 from arguments import ModelParams, OptimizationParams, PipelineParams
 from gaussian_renderer import network_gui, prefilter_voxel, render
+from lpips import lpips as lpips_fn
 from scene import GaussianModel, Scene
 from utils.general_utils import safe_state
 from utils.image_utils import psnr
 from utils.loss_utils import l1_loss, ssim
 
-# torch.set_num_threads(32)
-lpips_fn = lpips.LPIPS(net='vgg').to('cuda')
-
 try:
     from torch.utils.tensorboard import SummaryWriter
 
     TENSORBOARD_FOUND = True
-    print('found tf board')
 except ImportError:
     TENSORBOARD_FOUND = False
-    print('not found tf board')
+    print('Tensorboard not found, disable logging')
 
 
 def saveRuntimeCode(dst: str) -> None:
@@ -121,9 +108,9 @@ def training(
     first_iter += 1
     for iteration in range(first_iter, opt.iterations + 1):
         # network gui not available in scaffold-gs yet
-        if network_gui.conn == None:
+        if network_gui.conn is None:
             network_gui.try_connect()
-        while network_gui.conn != None:
+        while network_gui.conn is not None:
             try:
                 net_image_bytes = None
                 (
@@ -134,7 +121,7 @@ def training(
                     keep_alive,
                     scaling_modifer,
                 ) = network_gui.receive()
-                if custom_cam != None:
+                if custom_cam is not None:
                     net_image = render(custom_cam, gaussians, pipe, background, scaling_modifer)['render']
                     net_image_bytes = memoryview(
                         (torch.clamp(net_image, min=0, max=1.0) * 255)
@@ -397,12 +384,12 @@ def training_report(
 
                 if tb_writer:
                     tb_writer.add_scalar(
-                        f'{dataset_name}/' + config['name'] + '/loss_viewpoint - l1_loss',
+                        f'{dataset_name}/{config["name"]}/loss_viewpoint - l1_loss',
                         l1_test,
                         iteration,
                     )
                     tb_writer.add_scalar(
-                        f'{dataset_name}/' + config['name'] + '/loss_viewpoint - psnr',
+                        f'{dataset_name}/{config["name"]}/loss_viewpoint - psnr',
                         psnr_test,
                         iteration,
                     )
@@ -460,14 +447,14 @@ def render_set(model_path, name, iteration, views, gaussians, pipeline, backgrou
         # error maps
         errormap = (rendering - gt).abs()
 
-        name_list.append('{0:05d}'.format(idx) + '.png')
-        torchvision.utils.save_image(rendering, os.path.join(render_path, '{0:05d}'.format(idx) + '.png'))
-        torchvision.utils.save_image(errormap, os.path.join(error_path, '{0:05d}'.format(idx) + '.png'))
-        torchvision.utils.save_image(gt, os.path.join(gts_path, '{0:05d}'.format(idx) + '.png'))
-        per_view_dict['{0:05d}'.format(idx) + '.png'] = visible_count.item()
+        name_list.append(f'{idx:05d}.png')
+        torchvision.utils.save_image(rendering, os.path.join(render_path, f'{idx:05d}.png'))
+        torchvision.utils.save_image(errormap, os.path.join(error_path, f'{idx:05d}.png'))
+        torchvision.utils.save_image(gt, os.path.join(gts_path, f'{idx:05d}.png'))
+        per_view_dict[f'{idx:05d}.png'] = visible_count.item()
 
     with open(
-        os.path.join(model_path, name, 'ours_{}'.format(iteration), 'per_view_count.json'),
+        os.path.join(model_path, name, f'ours_{iteration}', 'per_view_count.json'),
         'w',
     ) as fp:
         json.dump(per_view_dict, fp, indent=True)
@@ -676,8 +663,6 @@ def evaluate(
 
 
 def get_logger(path):
-    import logging
-
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
     fileinfo = logging.FileHandler(os.path.join(path, 'outputs.log'))
@@ -691,6 +676,7 @@ def get_logger(path):
     logger.addHandler(fileinfo)
     logger.addHandler(controlshow)
 
+    coloredlogs.install(level='INFO', logger=logger)
     return logger
 
 
@@ -706,10 +692,8 @@ if __name__ == '__main__':
     parser.add_argument('--detect_anomaly', action='store_true', default=False)
     parser.add_argument('--warmup', action='store_true', default=False)
     parser.add_argument('--use_wandb', action='store_true', default=False)
-    # parser.add_argument("--test_iterations", nargs="+", type=int, default=[3_000, 7_000, 30_000])
-    # parser.add_argument("--save_iterations", nargs="+", type=int, default=[3_000, 7_000, 30_000])
-    parser.add_argument('--test_iterations', nargs='+', type=int, default=[30_000])
-    parser.add_argument('--save_iterations', nargs='+', type=int, default=[30_000])
+    parser.add_argument('--test_iterations', nargs='+', type=int, default=[7_000, 15_000, 30_000])
+    parser.add_argument('--save_iterations', nargs='+', type=int, default=[7_000, 15_000, 30_000])
     parser.add_argument('--quiet', action='store_true')
     parser.add_argument('--checkpoint_iterations', nargs='+', type=int, default=[])
     parser.add_argument('--start_checkpoint', type=str, default=None)
@@ -718,13 +702,11 @@ if __name__ == '__main__':
     args.save_iterations.append(args.iterations)
 
     # enable logging
-
     model_path = args.model_path
     os.makedirs(model_path, exist_ok=True)
 
     logger = get_logger(model_path)
-
-    logger.info(f'args: {args}')
+    logger.info(yaml.dump(vars(args), default_flow_style=False))
 
     if args.gpu != '-1':
         os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
@@ -733,7 +715,7 @@ if __name__ == '__main__':
 
     try:
         saveRuntimeCode(os.path.join(args.model_path, 'backup'))
-    except:
+    except Exception:
         logger.info('save code failed~')
 
     dataset = args.source_path.split('/')[-1]
@@ -752,14 +734,14 @@ if __name__ == '__main__':
     else:
         wandb = None
 
-    logger.info('Optimizing ' + args.model_path)
+    logger.info(f'Optimizing {args.model_path}')
 
     # Initialize system state (RNG)
     safe_state(args.quiet)
 
     # Start GUI server, configure and run training
-    network_gui.init(args.ip, args.port)
-    torch.autograd.set_detect_anomaly(args.detect_anomaly)
+    # network_gui.init(args.ip, args.port)
+    # torch.autograd.set_detect_anomaly(args.detect_anomaly)
 
     # training
     training(
@@ -775,8 +757,9 @@ if __name__ == '__main__':
         wandb,
         logger,
     )
+
     if args.warmup:
-        logger.info('\n Warmup finished! Reboot from last checkpoints')
+        logger.info('\nWarmup finished! Reboot from last checkpoints')
         new_ply_path = os.path.join(
             args.model_path,
             f'point_cloud/iteration_{args.iterations}',
@@ -801,11 +784,11 @@ if __name__ == '__main__':
     logger.info('\nTraining complete.')
 
     # rendering
-    logger.info('\nStarting Rendering~')
+    logger.info('\nStarting Rendering...')
     visible_count = render_sets(lp.extract(args), -1, pp.extract(args), wandb=wandb, logger=logger)
     logger.info('\nRendering complete.')
 
     # calc metrics
-    logger.info('\n Starting evaluation...')
+    logger.info('\nStarting evaluation...')
     evaluate(args.model_path, visible_count=visible_count, wandb=wandb, logger=logger)
     logger.info('\nEvaluating complete.')

@@ -14,13 +14,12 @@ import os
 from argparse import ArgumentParser
 from pathlib import Path
 
-# from lpipsPyTorch import lpips
-import lpips
 import torch
 import torchvision.transforms.functional as tf
 from PIL import Image
 from tqdm import tqdm
 
+from lpips import lpips as lpips_fn
 from utils.image_utils import psnr
 from utils.loss_utils import ssim
 
@@ -113,14 +112,13 @@ def evaluate(model_paths):
                 json.dump(full_dict[scene_dir], fp, indent=True)
             with open(scene_dir + '/per_view.json', 'w') as fp:
                 json.dump(per_view_dict[scene_dir], fp, indent=True)
-        except:
+        except Exception:
             print('Unable to compute metrics for model', scene_dir)
 
 
 if __name__ == '__main__':
     device = torch.device('cuda:0')
     torch.cuda.set_device(device)
-    lpips_fn = lpips.LPIPS(net='vgg').to(device)
 
     # Set up command line argument parser
     parser = ArgumentParser(description='Training script parameters')
