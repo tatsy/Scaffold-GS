@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List, Optional, Tuple, Type
+from typing import Optional, Tuple
 
 import cv2
 import numpy as np
@@ -11,14 +11,14 @@ def add_label_centered(
     text: str,
     font_scale: float = 1.0,
     thickness: int = 2,
-    alignment: str = "top",
+    alignment: str = 'top',
     color: Tuple[int, int, int] = (0, 255, 0),
 ) -> np.ndarray:
     font = cv2.FONT_HERSHEY_SIMPLEX
     textsize = cv2.getTextSize(text, font, font_scale, thickness=thickness)[0]
     img = img.astype(np.uint8).copy()
 
-    if alignment == "top":
+    if alignment == 'top':
         cv2.putText(
             img,
             text,
@@ -29,7 +29,7 @@ def add_label_centered(
             thickness=thickness,
             lineType=cv2.LINE_AA,
         )
-    elif alignment == "bottom":
+    elif alignment == 'bottom':
         cv2.putText(
             img,
             text,
@@ -41,19 +41,16 @@ def add_label_centered(
             lineType=cv2.LINE_AA,
         )
     else:
-        raise ValueError("Unknown text alignment")
+        raise ValueError('Unknown text alignment')
 
     return img
 
-def tensor2rgbjet(
-    tensor: th.Tensor, x_max: Optional[float] = None, x_min: Optional[float] = None
-) -> np.ndarray:
+
+def tensor2rgbjet(tensor: th.Tensor, x_max: Optional[float] = None, x_min: Optional[float] = None) -> np.ndarray:
     return cv2.applyColorMap(tensor2rgb(tensor, x_max=x_max, x_min=x_min), cv2.COLORMAP_JET)
 
 
-def tensor2rgb(
-    tensor: th.Tensor, x_max: Optional[float] = None, x_min: Optional[float] = None
-) -> np.ndarray:
+def tensor2rgb(tensor: th.Tensor, x_max: Optional[float] = None, x_min: Optional[float] = None) -> np.ndarray:
     x = tensor.data.cpu().numpy()
     if x_min is None:
         x_min = x.min()
@@ -71,11 +68,10 @@ def tensor2image(
     tensor: th.Tensor,
     x_max: Optional[float] = 1.0,
     x_min: Optional[float] = 0.0,
-    mode: str = "rgb",
+    mode: str = 'rgb',
     mask: Optional[th.Tensor] = None,
     label: Optional[str] = None,
 ) -> np.ndarray:
-
     tensor = tensor.detach()
 
     # Apply mask
@@ -91,27 +87,28 @@ def tensor2image(
     if n_channels == 1:
         tensor = tensor.repeat(3, 1, 1)
     elif n_channels != 3:
-        raise ValueError(f"Unsupported number of channels {n_channels}.")
+        raise ValueError(f'Unsupported number of channels {n_channels}.')
 
     # Convert to display format
     img = tensor.permute(1, 2, 0)
 
-    if mode == "rgb":
+    if mode == 'rgb':
         img = tensor2rgb(img, x_max=x_max, x_min=x_min)
-    elif mode == "jet":
+    elif mode == 'jet':
         # `cv2.applyColorMap` assumes input format in BGR
         img[:, :, :3] = img[:, :, [2, 1, 0]]
         img = tensor2rgbjet(img, x_max=x_max, x_min=x_min)
         # convert back to rgb
         img[:, :, :3] = img[:, :, [2, 1, 0]]
     else:
-        raise ValueError(f"Unsupported mode {mode}.")
+        raise ValueError(f'Unsupported mode {mode}.')
 
     if label is not None:
         img = add_label_centered(img, label)
 
     return img
-    
+
+
 # d: b x 1 x H x W
 # screenCoords: b x 2 x H X W
 # focal: b x 2 x 2
@@ -123,10 +120,11 @@ def depthImgToPosCam_Batched(d, screenCoords, focal, princpt):
     y = (d * p[:, 1:2, :, :]) / focal[:, 1:2, 1, None, None]
     return th.cat([x, y, d], dim=1)
 
+
 # p: b x 3 x H x W
 # out: b x 3 x H x W
 def computeNormalsFromPosCam_Batched(p):
-    p = F.pad(p, (1, 1, 1, 1), "replicate")
+    p = F.pad(p, (1, 1, 1, 1), 'replicate')
     d0 = p[:, :, 2:, 1:-1] - p[:, :, :-2, 1:-1]
     d1 = p[:, :, 1:-1, 2:] - p[:, :, 1:-1, :-2]
     n = th.cross(d0, d1, dim=1)
@@ -135,19 +133,20 @@ def computeNormalsFromPosCam_Batched(p):
     norm[norm < 1e-5] = 1  # Can not backprop through this
     return -n / norm
 
+
 def visualize_normal(inputs, depth_p):
     # Normals
-    uv = th.stack(
-        th.meshgrid(
-            th.arange(depth_p.shape[2]), th.arange(depth_p.shape[1]), indexing="xy"
-        ),
-        dim=0,
-    )[None].float().cuda()
-    position = depthImgToPosCam_Batched(
-        depth_p[None, ...], uv, inputs["focal"], inputs["princpt"]
+    uv = (
+        th.stack(
+            th.meshgrid(th.arange(depth_p.shape[2]), th.arange(depth_p.shape[1]), indexing='xy'),
+            dim=0,
+        )[None]
+        .float()
+        .cuda()
     )
+    position = depthImgToPosCam_Batched(depth_p[None, ...], uv, inputs['focal'], inputs['princpt'])
     normal = 0.5 * (computeNormalsFromPosCam_Batched(position) + 1.0)
     normal = normal[0, [2, 1, 0], :, :]  # legacy code assumes BGR format
-    normal_p = tensor2image(normal, label="normal_p")
+    normal_p = tensor2image(normal, label='normal_p')
 
     return normal_p

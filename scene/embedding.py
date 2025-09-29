@@ -1,11 +1,13 @@
 # We reference the code in https://github.com/nerfstudio-project/nerfstudio/blob/a8e6f8fa3fd6c0ad2f3e681dcf1519e74ad2230f/nerfstudio/field_components/embedding.py
 # Thanks to their great work!
 
-import torch
 from abc import abstractmethod
 from typing import Optional
+
+import torch
 from jaxtyping import Shaped
 from torch import Tensor, nn
+
 
 class FieldComponent(nn.Module):
     """Field modules that can be combined to store and compute the fields.
@@ -49,7 +51,7 @@ class FieldComponent(nn.Module):
             in_tensor: Input tensor to process
         """
         raise NotImplementedError
-  
+
 class Embedding(FieldComponent):
     """Index into embeddings.
     # TODO: add different types of initializations
@@ -77,5 +79,7 @@ class Embedding(FieldComponent):
 
         Args:
             in_tensor: input tensor to process
+        """
+        return self.embedding(in_tensor)
         """
         return self.embedding(in_tensor)

@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
-project(${SKBUILD_PROJECT_NAME} VERSION ${SKBUILD_PROJECT_VERSION} LANGUAGES CXX)
+project(${SKBUILD_PROJECT_NAME} VERSION ${SKBUILD_PROJECT_VERSION} LANGUAGES CXX CUDA)
 
 # General settings
-set(BUILD_TARGET diff_gaussian_rasterization_cuda)
+set(BUILD_TARGET simple_knn_cuda)
 
 # CUDA settings
 include(CheckLanguage)
@@ -11,7 +11,6 @@ check_language(CUDA)
 if(CMAKE_CUDA_COMPILER)
   enable_language(CUDA)
 
-  add_definitions(-DWITH_CUDA)
   find_package(CUDAToolkit REQUIRED)
   set(CMAKE_CUDA_STANDARD 17)
   set(CMAKE_CUDA_STANDARD_REQUIRED ON)
@@ -43,20 +42,8 @@ find_package(Torch CONFIG REQUIRED)
 find_library(TORCH_PYTHON_LIBRARY torch_python PATH "${TORCH_INSTALL_PREFIX}/lib")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third_party/glm ${TORCH_INCLUDE_DIRS})
-Python_add_library(${BUILD_TARGET}
-  ext.cpp
-	rasterize_points.h
-	rasterize_points.cu
-	cuda_rasterizer/backward.h
-	cuda_rasterizer/backward.cu
-	cuda_rasterizer/forward.h
-	cuda_rasterizer/forward.cu
-	cuda_rasterizer/auxiliary.h
-	cuda_rasterizer/rasterizer_impl.cu
-	cuda_rasterizer/rasterizer_impl.h
-	cuda_rasterizer/rasterizer.h
-)
+include_directories (${TORCH_INCLUDE_DIRS})
+Python_add_library(${BUILD_TARGET} ext.cpp simple_knn.cu spatial.cu)
 
 target_link_libraries(${BUILD_TARGET} PRIVATE
   pybind11::headers
