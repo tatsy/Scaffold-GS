@@ -191,10 +191,10 @@ Recommended checkpoint  structure in the model path location:
 <location>
 |---point_cloud
 |   |---point_cloud.ply
-|   |---color_mlp.pt
-|   |---cov_mlp.pt
-|   |---opacity_mlp.pt
-(|   |---embedding_appearance.pt)
+|   |---color_mlp.pth
+|   |---cov_mlp.pth
+|   |---opacity_mlp.pth
+(|   |---embedding_appearance.pth)
 |---cfg_args
 |---cameras.json
 (|---input.ply)

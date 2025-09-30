@@ -14,15 +14,15 @@ from functools import reduce
 
 import numpy as np
 import torch
+from torch import nn
 from plyfile import PlyData, PlyElement
 from simple_knn import distCUDA2
-from torch import nn
 from torch_scatter import scatter_max
 
 from scene.embedding import Embedding
-from utils.general_utils import build_scaling_rotation, get_expon_lr_func, inverse_sigmoid, strip_symmetric
-from utils.graphics_utils import BasicPointCloud
 from utils.system_utils import mkdir_p
+from utils.general_utils import inverse_sigmoid, strip_symmetric, get_expon_lr_func, build_scaling_rotation
+from utils.graphics_utils import BasicPointCloud
 
 
 class GaussianModel:
@@ -937,7 +937,7 @@ class GaussianModel:
                 self.mlp_opacity,
                 (torch.rand(1, self.feat_dim + 3 + self.opacity_dist_dim).cuda()),
             )
-            opacity_mlp.save(os.path.join(path, 'opacity_mlp.pt'))
+            opacity_mlp.save(os.path.join(path, 'opacity_mlp.pth'))
             self.mlp_opacity.train()
 
             self.mlp_cov.eval()
@@ -945,7 +945,7 @@ class GaussianModel:
                 self.mlp_cov,
                 (torch.rand(1, self.feat_dim + 3 + self.cov_dist_dim).cuda()),
             )
-            cov_mlp.save(os.path.join(path, 'cov_mlp.pt'))
+            cov_mlp.save(os.path.join(path, 'cov_mlp.pth'))
             self.mlp_cov.train()
 
             self.mlp_color.eval()
@@ -953,13 +953,13 @@ class GaussianModel:
                 self.mlp_color,
                 (torch.rand(1, self.feat_dim + 3 + self.color_dist_dim + self.appearance_dim).cuda()),
             )
-            color_mlp.save(os.path.join(path, 'color_mlp.pt'))
+            color_mlp.save(os.path.join(path, 'color_mlp.pth'))
             self.mlp_color.train()
 
             if self.use_feat_bank:
                 self.mlp_feature_bank.eval()
                 feature_bank_mlp = torch.jit.trace(self.mlp_feature_bank, (torch.rand(1, 3 + 1).cuda()))
-                feature_bank_mlp.save(os.path.join(path, 'feature_bank_mlp.pt'))
+                feature_bank_mlp.save(os.path.join(path, 'feature_bank_mlp.pth'))
                 self.mlp_feature_bank.train()
 
             if self.appearance_dim:
@@ -1007,13 +1007,13 @@ class GaussianModel:
 
     def load_mlp_checkpoints(self, path, mode='split'):  # split or unite
         if mode == 'split':
-            self.mlp_opacity = torch.jit.load(os.path.join(path, 'opacity_mlp.pt')).cuda()
-            self.mlp_cov = torch.jit.load(os.path.join(path, 'cov_mlp.pt')).cuda()
-            self.mlp_color = torch.jit.load(os.path.join(path, 'color_mlp.pt')).cuda()
+            self.mlp_opacity = torch.jit.load(os.path.join(path, 'opacity_mlp.pth')).cuda()
+            self.mlp_cov = torch.jit.load(os.path.join(path, 'cov_mlp.pth')).cuda()
+            self.mlp_color = torch.jit.load(os.path.join(path, 'color_mlp.pth')).cuda()
             if self.use_feat_bank:
-                self.mlp_feature_bank = torch.jit.load(os.path.join(path, 'feature_bank_mlp.pt')).cuda()
+                self.mlp_feature_bank = torch.jit.load(os.path.join(path, 'feature_bank_mlp.pth')).cuda()
             if self.appearance_dim > 0:
-                self.embedding_appearance = torch.jit.load(os.path.join(path, 'embedding_appearance.pt')).cuda()
+                self.embedding_appearance = torch.jit.load(os.path.join(path, 'embedding_appearance.pth')).cuda()
         elif mode == 'unite':
             checkpoint = torch.load(os.path.join(path, 'checkpoints.pth'))
             self.mlp_opacity.load_state_dict(checkpoint['opacity_mlp'])
