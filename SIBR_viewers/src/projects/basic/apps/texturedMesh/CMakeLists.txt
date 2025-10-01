@@ -1,13 +1,11 @@
 # Copyright (C) 2020, Inria
 # GRAPHDECO research group, https://team.inria.fr/graphdeco
 # All rights reserved.
-# 
-# This software is free for non-commercial, research and evaluation use 
+#
+# This software is free for non-commercial, research and evaluation use
 # under the terms of the LICENSE.md file.
-# 
+#
 # For inquiries contact sibr@inria.fr and/or George.Drettakis@inria.fr
-
-
 
 project(SIBR_texturedMesh_app)
 
@@ -18,25 +16,40 @@ file(GLOB RESOURCES "resources/*.ini")
 source_group("Resources Files" FILES ${RESOURCES})
 
 add_executable(${PROJECT_NAME} ${SOURCES})
-target_link_libraries(${PROJECT_NAME}
 
-	${Boost_LIBRARIES}
-	${ASSIMP_LIBRARIES}
-	${GLEW_LIBRARIES}
-	${OPENGL_LIBRARIES}
-	${OpenCV_LIBRARIES}
-	sibr_view
-	sibr_assets
-	sibr_basic
+target_include_directories(${PROJECT_NAME}
+  PRIVATE
+  ${OpenCV_INCLUDE_DIRS}
 )
+
+target_link_libraries(${PROJECT_NAME}
+  PRIVATE
+  ${Boost_LIBRARIES}
+  ${OpenCV_LIBS}
+  ${ASSIMP_LIBRARIES}
+  OpenGL::GL
+  GLEW::GLEW
+  glfw
+  xatlas
+  sibr_system
+  sibr_view
+  sibr_video
+  sibr_assets
+  sibr_graphics
+  sibr_scene
+  sibr_renderer
+  sibr_raycaster
+  sibr_basic
+)
+
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER "projects/basic/apps")
 
-## High level macro to install in an homogen way all our ibr targets
+# # High level macro to install in an homogen way all our ibr targets
 include(install_runtime)
 ibr_install_target(${PROJECT_NAME}
-    INSTALL_PDB                         ## mean install also MSVC IDE *.pdb file (DEST according to target type)
-	RESOURCES  	${RESOURCES}
-	RSC_FOLDER 	"basic"
-    STANDALONE  ${INSTALL_STANDALONE}   ## mean call install_runtime with bundle dependencies resolution
-    COMPONENT   ${PROJECT_NAME}_install ## will create custom target to install only this project
+  INSTALL_PDB # # mean install also MSVC IDE *.pdb file (DEST according to target type)
+  RESOURCES ${RESOURCES}
+  RSC_FOLDER "basic"
+  STANDALONE ${INSTALL_STANDALONE} # # mean call install_runtime with bundle dependencies resolution
+  COMPONENT ${PROJECT_NAME}_install # # will create custom target to install only this project
 )

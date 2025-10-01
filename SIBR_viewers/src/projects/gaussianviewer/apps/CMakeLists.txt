@@ -11,4 +11,4 @@
 
 project(SIBR_gaussian_apps)
 
-add_subdirectory(gaussianViewer/)
+add_subdirectory(gaussianViewer)

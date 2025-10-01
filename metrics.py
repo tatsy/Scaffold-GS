@@ -9,10 +9,10 @@
 # For inquiries contact  george.drettakis@inria.fr
 #
 
-import json
 import os
-from argparse import ArgumentParser
+import json
 from pathlib import Path
+from argparse import ArgumentParser
 
 import torch
 import torchvision.transforms.functional as tf
@@ -20,8 +20,8 @@ from PIL import Image
 from tqdm import tqdm
 
 from lpips import lpips as lpips_fn
-from utils.image_utils import psnr
 from utils.loss_utils import ssim
+from utils.image_utils import psnr
 
 
 def readImages(renders_dir, gt_dir):
@@ -122,9 +122,6 @@ if __name__ == '__main__':
 
     # Set up command line argument parser
     parser = ArgumentParser(description='Training script parameters')
-    parser.add_argument('--model_paths', '-m', required=True, nargs='+', type=str, default=[])
-    args = parser.parse_args()
-    evaluate(args.model_paths)
     parser.add_argument('--model_paths', '-m', required=True, nargs='+', type=str, default=[])
     args = parser.parse_args()
     evaluate(args.model_paths)

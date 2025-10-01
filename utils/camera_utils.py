@@ -10,6 +10,7 @@
 #
 
 import numpy as np
+from tqdm.auto import tqdm
 
 from scene.cameras import Camera
 from utils.general_utils import PILtoTorch
@@ -71,7 +72,7 @@ def loadCam(args, id, cam_info, resolution_scale):
 def cameraList_from_camInfos(cam_infos, resolution_scale, args):
     camera_list = []
 
-    for id, c in enumerate(cam_infos):
+    for id, c in enumerate(tqdm(cam_infos)):
         camera_list.append(loadCam(args, id, c, resolution_scale))
 
     return camera_list

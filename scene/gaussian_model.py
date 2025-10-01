@@ -968,7 +968,7 @@ class GaussianModel:
                     self.embedding_appearance,
                     (torch.zeros((1,), dtype=torch.long).cuda()),
                 )
-                emd.save(os.path.join(path, 'embedding_appearance.pt'))
+                emd.save(os.path.join(path, 'embedding_appearance.pth'))
                 self.embedding_appearance.train()
 
         elif mode == 'unite':

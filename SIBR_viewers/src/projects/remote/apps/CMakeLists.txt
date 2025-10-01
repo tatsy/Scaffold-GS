@@ -11,4 +11,4 @@
 
 project(SIBR_remote_apps)
 
-add_subdirectory(remoteGaussianUI/)
+add_subdirectory(remoteGaussianUI)

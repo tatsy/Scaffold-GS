@@ -7,9 +7,7 @@
 # 
 # For inquiries contact sibr@inria.fr and/or George.Drettakis@inria.fr
 
-
-
 project(SIBR_basic_apps)
 
-add_subdirectory(texturedMesh/)
-add_subdirectory(pointBased/)
+add_subdirectory(texturedMesh)
+add_subdirectory(pointBased)

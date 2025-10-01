@@ -9,15 +9,15 @@
 # For inquiries contact  george.drettakis@inria.fr
 #
 
-import json
 import os
+import json
 import random
 
 from arguments import ModelParams
-from scene.dataset_readers import sceneLoadTypeCallbacks
-from scene.gaussian_model import GaussianModel
 from utils.camera_utils import camera_to_JSON, cameraList_from_camInfos
 from utils.system_utils import searchForMaxIteration
+from scene.gaussian_model import GaussianModel
+from scene.dataset_readers import sceneLoadTypeCallbacks
 
 
 class Scene:

@@ -79,7 +79,7 @@ target_link_libraries(${PROJECT_NAME}
 	${ASSIMP_LIBRARIES}
 	${GLEW_LIBRARIES}
 	${OPENGL_LIBRARIES}
-  	${OpenCV_LIBRARIES}
+  	${OpenCV_LIBS}
 	sibr_system
 
 	# you can add your internal or external dependencies here (sibr_renderer, sibr_view, sibr_graphics, sibr_assets,...)
@@ -144,7 +144,7 @@ target_link_libraries(${PROJECT_NAME}
 	${ASSIMP_LIBRARIES}
 	${GLEW_LIBRARIES}
 	${OPENGL_LIBRARIES}
-	${OpenCV_LIBRARIES}
+	${OpenCV_LIBS}
 	glfw3
 	sibr_system
 

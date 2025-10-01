@@ -16,29 +16,26 @@ source_group("Source Files" FILES ${SOURCES})
 ## Specify target rules
 add_library(${PROJECT_NAME} SHARED ${SOURCES} ${LIBS_SOURCES})
 
-include_directories(
+target_include_directories(${PROJECT_NAME}
+  PRIVATE
 	${Boost_INCLUDE_DIRS}
+	${OpenCV_INCLUDE_DIRS}
 	${nanoflann_INCLUDE_DIRS}
 )
-if(WIN32)
+
 target_link_libraries(${PROJECT_NAME}
+  PUBLIC
 	OpenMP::OpenMP_CXX
 	embree3
-	sibr_graphics
-	sibr_assets
 	nanoflann
 )
-else()
-target_link_libraries(${PROJECT_NAME}
-	OpenMP::OpenMP_CXX
-	embree
-# CLUSTER
-#	/data/graphdeco/share/tbb/lib64/libtbb.so
-	sibr_graphics
-	sibr_assets
-	nanoflann
-)
+
+set_property(TARGET ${PROJECT_NAME} PROPERTY LINK_WHAT_YOU_USE ON)
+
+if(UNIX AND NOT APPLE)
+  target_link_options(${PROJECT_NAME} PRIVATE "-Wl,--no-as-needed")
 endif()
+
 
 add_definitions( -DSIBR_RAYCASTER_EXPORTS -DBOOST_ALL_DYN_LINK  )
 
@@ -47,5 +44,5 @@ set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER ${SIBR_FOLDER})
 ## High level macro to install in an homogen way all our ibr targets
 include(install_runtime)
 ibr_install_target(${PROJECT_NAME}
-    INSTALL_PDB                         ## mean install also MSVC IDE *.pdb file (DEST according to target type)
+  INSTALL_PDB                         ## mean install also MSVC IDE *.pdb file (DEST according to target type)
 )

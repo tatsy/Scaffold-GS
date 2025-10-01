@@ -16,45 +16,25 @@ source_group("Source Files" FILES ${SOURCES})
 ## Specify target rules
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
-include_directories(
+target_include_directories(${PROJECT_NAME}
+  PRIVATE
 	${Boost_INCLUDE_DIRS}
+	${OpenCV_INCLUDE_DIRS}
 	${mrf_INCLUDE_DIRS}
 )
-if(WIN32)
+
 target_link_libraries(${PROJECT_NAME}
-	${Boost_LIBRARIES}
-	${OpenCV_LIBRARIES}
+  PUBLIC
 	OpenMP::OpenMP_CXX
-	glfw3
-	mrf
-	sibr_system
-	sibr_graphics
-	sibr_assets
-	sibr_raycaster
 )
-else()
-target_link_libraries(${PROJECT_NAME}
-	${Boost_LIBRARIES}
-	${OpenCV_LIBRARIES}
-	OpenMP::OpenMP_CXX
-	${GLFW_LIBRARY}
-	mrf
-	sibr_system
-	sibr_graphics
-	sibr_assets
-	sibr_raycaster
-)
+
+set_property(TARGET ${PROJECT_NAME} PROPERTY LINK_WHAT_YOU_USE ON)
+
+if(UNIX AND NOT APPLE)
+  target_link_options(${PROJECT_NAME} PRIVATE "-Wl,--no-as-needed")
 endif()
 
-if (NOT WIN32)
-	target_link_libraries(${PROJECT_NAME}
- 		# GLEW
- 		rt m dl X11 pthread Xrandr Xinerama Xxf86vm Xcursor
-		# X11 Xi Xrandr Xxf86vm Xinerama Xcursor dl rt m pthread
-	)
-endif()
-
-add_definitions( -DSIBR_IMGPROC_EXPORTS -DBOOST_ALL_DYN_LINK  )
+add_definitions(-DSIBR_IMGPROC_EXPORTS -DBOOST_ALL_DYN_LINK)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER ${SIBR_FOLDER})
 
@@ -62,5 +42,5 @@ set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER ${SIBR_FOLDER})
 ## High level macro to install in an homogen way all our ibr targets
 include(install_runtime)
 ibr_install_target(${PROJECT_NAME}
-    INSTALL_PDB                         ## mean install also MSVC IDE *.pdb file (DEST according to target type)
+  INSTALL_PDB                         ## mean install also MSVC IDE *.pdb file (DEST according to target type)
 )

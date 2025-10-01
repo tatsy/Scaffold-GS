@@ -208,7 +208,6 @@ endif()
 include_directories(${BOOST_INCLUDEDIR} ${Boost_INCLUDE_DIRS})
 link_directories(${BOOST_LIBRARYDIR} ${Boost_LIBRARY_DIRS})
 
-
 ##############
 ## Find OpenMP
 ##############
@@ -217,71 +216,15 @@ find_package(OpenMP)
 ##############
 ## Find OpenCV
 ##############
-if (WIN32)
-	if (${MSVC_TOOLSET_VERSION} EQUAL 143)
-		MESSAGE("SPECIAL OPENCV HANDLING")
-		set(opencv_set_arguments 
-		CHECK_CACHED_VAR OpenCV_DIR PATH "install" ## see OpenCVConfig.cmake
-	    )
-	elseif (MSVC11 OR MSVC12)
-	    set(opencv_set_arguments 
-		CHECK_CACHED_VAR OpenCV_DIR PATH "opencv/build" ## see OpenCVConfig.cmake
-	    )
-	elseif (MSVC14)
-	    set(opencv_set_arguments 
-		CHECK_CACHED_VAR OpenCV_DIR PATH "opencv-4.5.0/build" ## see OpenCVConfig.cmake
-	    )
-	else ()
-	    message("There is no provided OpenCV library for your compiler, relying on find_package to find it")
-	endif()
-else()
-	    message("There is no provided OpenCV library for your compiler, relying on find_package to find it")
-endif()
-
-sibr_addlibrary(NAME OpenCV #VERBOSE ON
-        MSVC11 "https://repo-sam.inria.fr/fungraph/dependencies/sibr/~0.9/opencv.7z"
-        MSVC12 "https://repo-sam.inria.fr/fungraph/dependencies/sibr/~0.9/opencv.7z"
-        MSVC14 "https://repo-sam.inria.fr/fungraph/dependencies/sibr/~0.9/opencv-4.5.0.7z"    # opencv compatible with msvc14 and with contribs
-        MSVC17 "https://repo-sam.inria.fr/fungraph/dependencies/sibr/~0.9/opencv4-8.7z" 
-		SET ${opencv_set_arguments}
-    )
-find_package(OpenCV 4.5 REQUIRED) ## Use directly the OpenCVConfig.cmake provided
-## FOR CLUSTER
-###find_package(OpenCV 4.5 REQUIRED PATHS "/data/graphdeco/share/opencv/usr/local/lib64/cmake/opencv4/" ) ## Use directly the OpenCVConfig.cmake provided
-
-    ##https://stackoverflow.com/questions/24262081/cmake-relwithdebinfo-links-to-debug-libs
-set_target_properties(${OpenCV_LIBS} PROPERTIES MAP_IMPORTED_CONFIG_RELWITHDEBINFO RELEASE)
-
-add_definitions(-DOPENCV_TRAITS_ENABLE_DEPRECATED) 
-
-if(OpenCV_INCLUDE_DIRS)
-    foreach(inc ${OpenCV_INCLUDE_DIRS})
-        if(NOT EXISTS ${inc})
-            set(OpenCV_INCLUDE_DIR "" CACHE PATH "additional custom include DIR (in case of trouble to find it (fedora 17 opencv package))")
-        endif()
-    endforeach()
-    if(OpenCV_INCLUDE_DIR)
-        list(APPEND OpenCV_INCLUDE_DIRS ${OpenCV_INCLUDE_DIR})
-        include_directories(${OpenCV_INCLUDE_DIRS})
-    endif()
-endif()
+find_package(OpenCV 4 REQUIRED COMPONENTS core imgproc imgcodecs highgui video optflow)
+message(STATUS "OpenCV_VERSION: ${OpenCV_VERSION}")
+message(STATUS "OpenCV_DIR: ${OpenCV_DIR}")
+message(STATUS "OpenCV_LIBS: ${OpenCV_LIBS}")
 
 ###################
 ## Find GLFW
 ###################
-sibr_addlibrary(
-    NAME glfw3
-    MSVC11 "https://repo-sam.inria.fr/fungraph/dependencies/ibr-common/win3rdParty-MSVC15-splitted%20version/glfw-3.2.1.7z"
-    MSVC14 "https://repo-sam.inria.fr/fungraph/dependencies/ibr-common/win3rdParty-MSVC15-splitted%20version/glfw-3.2.1.7z"     # TODO SV: provide a valid version if required
-    SET CHECK_CACHED_VAR glfw3_DIR PATH "glfw-3.2.1"
-)
-
-### FOR CLUSTER COMMENT OUT lines above, uncomment lines below
-##find_package(GLFW REQUIRED 3.3 )
-##message("***********=============> GLFW IS " ${GLFW_LIBRARY})
-##message("***********=============> GLFW IS " ${GLFW_LIBRARIES})
-
-find_package(glfw3 REQUIRED)
+find_package(glfw3 3.3 REQUIRED)
 
 sibr_gitlibrary(TARGET imgui
     GIT_REPOSITORY 	"https://gitlab.inria.fr/sibr/libs/imgui.git"
@@ -312,7 +255,7 @@ sibr_gitlibrary(TARGET picojson
 
 sibr_gitlibrary(TARGET rapidxml
     GIT_REPOSITORY 	"https://gitlab.inria.fr/sibr/libs/rapidxml.git"
-    GIT_TAG			"069e87f5ec5ce1745253bd64d89644d6b894e516"
+    GIT_TAG			"877e2f0daae6d76a9126d3a8b25557b8b0d9b763"
 )
 
 sibr_gitlibrary(TARGET xatlas

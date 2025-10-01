@@ -7,12 +7,10 @@
 # 
 # For inquiries contact sibr@inria.fr and/or George.Drettakis@inria.fr
 
-
-
 project(sibr_basic_all)
 
-add_subdirectory(apps)
 add_subdirectory(renderer)
+add_subdirectory(apps)
 
 include(install_runtime)
 subdirectory_target(${PROJECT_NAME} ${CMAKE_CURRENT_LIST_DIR} "projects/basic")

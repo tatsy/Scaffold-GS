@@ -9,27 +9,27 @@
 # For inquiries contact  george.drettakis@inria.fr
 #
 
-import json
 import os
 import sys
-from pathlib import Path
+import json
 from typing import NamedTuple
+from pathlib import Path
 
 import cv2
 import numpy as np
-from colorama import Fore, Style
 from PIL import Image
-from plyfile import PlyData, PlyElement
 from tqdm import tqdm
+from plyfile import PlyData, PlyElement
+from colorama import Fore, Style
 
 from scene.colmap_loader import (
     qvec2rotmat,
-    read_extrinsics_binary,
+    read_points3D_text,
     read_extrinsics_text,
-    read_intrinsics_binary,
     read_intrinsics_text,
     read_points3D_binary,
-    read_points3D_text,
+    read_extrinsics_binary,
+    read_intrinsics_binary,
 )
 from utils.graphics_utils import focal2fov, fov2focal, getWorld2View2
 
@@ -38,8 +38,8 @@ try:
 except ImportError:
     print('No laspy')
 
-from scene.gaussian_model import BasicPointCloud
 from utils.sh_utils import SH2RGB
+from scene.gaussian_model import BasicPointCloud
 
 
 class CameraInfo(NamedTuple):
@@ -119,13 +119,9 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, images_folder):
                 'Colmap camera model not handled: only undistorted datasets (PINHOLE or SIMPLE_PINHOLE cameras) supported!'
             )
 
-        # print(f'FovX: {FovX}, FovY: {FovY}')
-
-        image_path = os.path.join(images_folder, os.path.basename(extr.name))
-        image_name = os.path.basename(image_path).split('.')[0]
-        image = Image.open(image_path)
-
-        # print(f'image: {image.size}')
+        image_path = os.path.join(images_folder, extr.name)
+        image_name = extr.name
+        image = Image.open(image_path).convert('RGB')
 
         cam_info = CameraInfo(
             uid=uid,
@@ -140,6 +136,7 @@ def readColmapCameras(cam_extrinsics, cam_intrinsics, images_folder):
             height=height,
         )
         cam_infos.append(cam_info)
+
     sys.stdout.write('\n')
     return cam_infos
 
@@ -194,9 +191,11 @@ def readColmapSceneInfo(path, images, eval, lod, llffhold=8):
         cam_extrinsics = read_extrinsics_text(cameras_extrinsic_file)
         cam_intrinsics = read_intrinsics_text(cameras_intrinsic_file)
 
-    reading_dir = 'images' if images == None else images
+    reading_dir = 'images' if images is None else images
     cam_infos_unsorted = readColmapCameras(
-        cam_extrinsics=cam_extrinsics, cam_intrinsics=cam_intrinsics, images_folder=os.path.join(path, reading_dir)
+        cam_extrinsics=cam_extrinsics,
+        cam_intrinsics=cam_intrinsics,
+        images_folder=os.path.join(path, reading_dir),
     )
     cam_infos = sorted(cam_infos_unsorted.copy(), key=lambda x: x.image_name)
 
@@ -211,13 +210,20 @@ def readColmapSceneInfo(path, images, eval, lod, llffhold=8):
                 train_cam_infos = [c for idx, c in enumerate(cam_infos) if idx <= lod]
                 test_cam_infos = [c for idx, c in enumerate(cam_infos) if idx > lod]
 
-        else:
+        elif llffhold:
+            print('----------LLFF HOLD----------')
             train_cam_infos = [c for idx, c in enumerate(cam_infos) if idx % llffhold != 0]
             test_cam_infos = [c for idx, c in enumerate(cam_infos) if idx % llffhold == 0]
 
     else:
-        train_cam_infos = cam_infos
-        test_cam_infos = []
+        test_cam_names_list = []
+        test_file = os.path.join(path, 'test_list.txt')
+        if os.path.exists(test_file):
+            with open(test_file, mode='r') as f:
+                test_cam_names_list = [line.strip() for line in f]
+
+        train_cam_infos = [c for c in cam_infos if c.image_name not in test_cam_names_list]
+        test_cam_infos = [c for c in cam_infos if c.image_name in test_cam_names_list]
 
     nerf_normalization = getNerfppNorm(train_cam_infos)
 
@@ -233,11 +239,11 @@ def readColmapSceneInfo(path, images, eval, lod, llffhold=8):
 
         storePly(ply_path, xyz, rgb)
 
-    # try:
-    print('start fetching data from ply file')
-    pcd = fetchPly(ply_path)
-    # except:
-    #     pcd = None
+    try:
+        print('start fetching data from ply file')
+        pcd = fetchPly(ply_path)
+    except Exception:
+        pcd = None
 
     scene_info = SceneInfo(
         point_cloud=pcd,
@@ -246,6 +252,7 @@ def readColmapSceneInfo(path, images, eval, lod, llffhold=8):
         nerf_normalization=nerf_normalization,
         ply_path=ply_path,
     )
+
     return scene_info
 
 

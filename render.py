@@ -9,27 +9,18 @@
 # For inquiries contact  george.drettakis@inria.fr
 #
 import os
-import subprocess
-
-import numpy as np
-import torch
-
-cmd = 'nvidia-smi -q -d Memory |grep -A4 GPU|grep Used'
-result = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE).stdout.decode().split('\n')
-os.environ['CUDA_VISIBLE_DEVICES'] = str(np.argmin([int(x.split()[2]) for x in result[:-1]]))
-
-os.system('echo $CUDA_VISIBLE_DEVICES')
-
 import json
 import time
 from argparse import ArgumentParser
 
+import numpy as np
+import torch
 import torchvision
 from tqdm import tqdm
 
-from arguments import ModelParams, PipelineParams, get_combined_args
-from gaussian_renderer import GaussianModel, prefilter_voxel, render
 from scene import Scene
+from arguments import ModelParams, PipelineParams, get_combined_args
+from gaussian_renderer import GaussianModel, render, prefilter_voxel
 from utils.general_utils import safe_state
 
 
