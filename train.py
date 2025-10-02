@@ -9,33 +9,33 @@
 # For inquiries contact  george.drettakis@inria.fr
 #
 
-import json
-import logging
 import os
 import sys
+import json
 import time
 import uuid
-from argparse import ArgumentParser, Namespace
+import logging
 from os import makedirs
-from pathlib import Path
 from random import randint
+from pathlib import Path
+from argparse import Namespace, ArgumentParser
 
-import coloredlogs
+import yaml
 import torch
+import wandb
+import coloredlogs
 import torchvision
 import torchvision.transforms.functional as tf
-import wandb
-import yaml
 from PIL import Image
 from tqdm import tqdm
 
-from arguments import ModelParams, OptimizationParams, PipelineParams
-from gaussian_renderer import network_gui, prefilter_voxel, render
 from lpips import lpips as lpips_fn
-from scene import GaussianModel, Scene
-from utils.general_utils import safe_state
+from scene import Scene, GaussianModel
+from arguments import ModelParams, PipelineParams, OptimizationParams
+from utils.loss_utils import ssim, l1_loss
+from gaussian_renderer import render, network_gui, prefilter_voxel
 from utils.image_utils import psnr
-from utils.loss_utils import l1_loss, ssim
+from utils.general_utils import safe_state
 
 try:
     from torch.utils.tensorboard import SummaryWriter
@@ -741,7 +741,7 @@ if __name__ == '__main__':
 
     # Start GUI server, configure and run training
     # network_gui.init(args.ip, args.port)
-    # torch.autograd.set_detect_anomaly(args.detect_anomaly)
+    torch.autograd.set_detect_anomaly(args.detect_anomaly)
 
     # training
     training(
